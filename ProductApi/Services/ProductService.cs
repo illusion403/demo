@@ -144,7 +144,7 @@ public class ProductService : IProductService
 
     private static string SanitizeCategory(string category)
     {
-        return category?.Trim();
+        return category?.Trim() ?? string.Empty;
     }
 
     private static ProductResponse MapToResponse(Product product) => new()
