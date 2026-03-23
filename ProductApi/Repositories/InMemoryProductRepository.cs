@@ -15,12 +15,15 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<IEnumerable<Product>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_products.Values.Where(p => p.IsActive).AsEnumerable());
+        return Task.FromResult(_products.Values.Where(p => p.IsActive).ToList().AsEnumerable());
     }
 
     public Task<IEnumerable<Product>> GetByCategoryAsync(string category, CancellationToken cancellationToken = default)
     {
-        var sanitizedCategory = category?.Trim();
+        if (string.IsNullOrWhiteSpace(category))
+            return Task.FromResult(Enumerable.Empty<Product>());
+
+        var sanitizedCategory = category.Trim();
         var products = _products.Values
             .Where(p => p.IsActive && p.Category.Equals(sanitizedCategory, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(products.AsEnumerable());
@@ -45,9 +48,25 @@ public class InMemoryProductRepository : IProductRepository
         if (product == null)
             throw new ArgumentNullException(nameof(product));
 
+        // Check if product exists first
+        if (!_products.TryGetValue(product.Id, out var existing))
+        {
+            return Task.FromResult<Product?>(null);
+        }
+
         product.UpdatedAt = DateTime.UtcNow;
 
-        var updated = _products.AddOrUpdate(product.Id, product, (key, existing) => product);
+        // Update existing properties atomically to avoid race conditions
+        var updated = _products.AddOrUpdate(product.Id, product, (key, existingProduct) => {
+            existingProduct.Name = product.Name;
+            existingProduct.Description = product.Description;
+            existingProduct.Price = product.Price;
+            existingProduct.StockQuantity = product.StockQuantity;
+            existingProduct.Category = product.Category;
+            existingProduct.IsActive = product.IsActive;
+            existingProduct.UpdatedAt = product.UpdatedAt;
+            return existingProduct;
+        });
         return Task.FromResult<Product?>(updated);
     }
 
@@ -79,11 +98,24 @@ public class InMemoryProductRepository : IProductRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
+        if (pageNumber < 1)
+            throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+        if (pageSize < 1)
+            throw new ArgumentException("Page size must be greater than 0", nameof(pageSize));
+
+        if (pageSize > 100)
+            throw new ArgumentException("Page size cannot exceed 100", nameof(pageSize));
+
         var activeProducts = _products.Values.Where(p => p.IsActive).ToList();
         var totalCount = activeProducts.Count;
 
+        // Calculate skip with overflow protection
+        long skipLong = (long)(pageNumber - 1) * pageSize;
+        int skip = skipLong > int.MaxValue ? int.MaxValue : (int)skipLong;
+
         var items = activeProducts
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip(skip)
             .Take(pageSize);
 
         return Task.FromResult<(IEnumerable<Product> Items, int TotalCount)>((items, totalCount));
