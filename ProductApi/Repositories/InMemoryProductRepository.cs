@@ -87,7 +87,7 @@ public class InMemoryProductRepository : IProductRepository
         existing.IsActive = false;
         existing.UpdatedAt = DateTime.UtcNow;
         _products.TryUpdate(id, existing, existing);
-        
+
         return Task.FromResult(true);
     }
 
