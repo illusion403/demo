@@ -20,8 +20,9 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<IEnumerable<Product>> GetByCategoryAsync(string category, CancellationToken cancellationToken = default)
     {
+        var sanitizedCategory = category?.Trim();
         var products = _products.Values
-            .Where(p => p.IsActive && p.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
+            .Where(p => p.IsActive && p.Category.Equals(sanitizedCategory, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(products.AsEnumerable());
     }
 
@@ -44,14 +45,10 @@ public class InMemoryProductRepository : IProductRepository
         if (product == null)
             throw new ArgumentNullException(nameof(product));
 
-        if (!_products.ContainsKey(product.Id))
-        {
-            return Task.FromResult<Product?>(null);
-        }
-
         product.UpdatedAt = DateTime.UtcNow;
-        _products[product.Id] = product;
-        return Task.FromResult<Product?>(product);
+        
+        var updated = _products.AddOrUpdate(product.Id, product, (key, existing) => product);
+        return Task.FromResult<Product?>(updated);
     }
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -82,8 +79,8 @@ public class InMemoryProductRepository : IProductRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var activeProducts = _products.Values.Where(p => p.IsActive);
-        var totalCount = activeProducts.Count();
+        var activeProducts = _products.Values.Where(p => p.IsActive).ToList();
+        var totalCount = activeProducts.Count;
 
         var items = activeProducts
             .Skip((pageNumber - 1) * pageSize)

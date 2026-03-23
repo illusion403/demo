@@ -57,7 +57,7 @@ public class GlobalExceptionHandlingMiddleware
             Success = false,
             Message = message,
             Data = null,
-            Errors = new List<string> { exception.Message }
+            Errors = new List<string> { exception.Message ?? "An error occurred" }
         };
 
         var jsonOptions = new JsonSerializerOptions

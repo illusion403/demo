@@ -59,7 +59,8 @@ public class ProductService : IProductService
             Description = request.Description,
             Price = request.Price,
             StockQuantity = request.StockQuantity,
-            Category = request.Category
+            Category = SanitizeCategory(request.Category),
+            CreatedAt = DateTime.UtcNow
         };
 
         var created = await _repository.CreateAsync(product, cancellationToken);
@@ -84,7 +85,7 @@ public class ProductService : IProductService
         existing.Description = request.Description;
         existing.Price = request.Price;
         existing.StockQuantity = request.StockQuantity;
-        existing.Category = request.Category;
+        existing.Category = SanitizeCategory(request.Category);
         existing.IsActive = request.IsActive;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -118,26 +119,32 @@ public class ProductService : IProductService
 
     private static void ValidateCreateRequest(CreateProductRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ArgumentException("Product name is required", nameof(request));
-
-        if (request.Price < 0)
-            throw new ArgumentException("Price cannot be negative", nameof(request));
-
-        if (request.StockQuantity < 0)
-            throw new ArgumentException("Stock quantity cannot be negative", nameof(request));
+        ValidateProductRequest(request.Name, request.Price, request.StockQuantity, request.Category);
     }
 
     private static void ValidateUpdateRequest(UpdateProductRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ArgumentException("Product name is required", nameof(request));
+        ValidateProductRequest(request.Name, request.Price, request.StockQuantity, request.Category);
+    }
 
-        if (request.Price < 0)
-            throw new ArgumentException("Price cannot be negative", nameof(request));
+    private static void ValidateProductRequest(string name, decimal price, int stockQuantity, string category)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Product name is required", nameof(name));
 
-        if (request.StockQuantity < 0)
-            throw new ArgumentException("Stock quantity cannot be negative", nameof(request));
+        if (string.IsNullOrWhiteSpace(category))
+            throw new ArgumentException("Category is required", nameof(category));
+
+        if (price < 0)
+            throw new ArgumentException("Price cannot be negative", nameof(price));
+
+        if (stockQuantity < 0)
+            throw new ArgumentException("Stock quantity cannot be negative", nameof(stockQuantity));
+    }
+
+    private static string SanitizeCategory(string category)
+    {
+        return category?.Trim();
     }
 
     private static ProductResponse MapToResponse(Product product) => new()
