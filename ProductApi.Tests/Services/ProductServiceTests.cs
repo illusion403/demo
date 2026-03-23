@@ -177,10 +177,10 @@ public class ProductServiceTests
     }
 
     [Theory]
-    [InlineData("", "Name is required")]
-    [InlineData(null, "Name is required")]
-    [InlineData("   ", "Name is required")]
-    public async Task CreateAsync_InvalidName_ThrowsArgumentException(string? name, string expectedMessage)
+    [InlineData("")]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task CreateAsync_InvalidName_ThrowsArgumentException(string? name)
     {
         // Arrange
         var request = new CreateProductRequest

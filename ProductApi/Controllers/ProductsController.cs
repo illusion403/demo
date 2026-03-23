@@ -28,7 +28,7 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var products = await _productService.GetAllAsync(cancellationToken);
-        
+
         return Ok(new ApiResponse<IEnumerable<ProductResponse>>
         {
             Success = true,
@@ -51,7 +51,7 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var pagedResult = await _productService.GetPagedAsync(pageNumber, pageSize, cancellationToken);
-        
+
         return Ok(new ApiResponse<PagedResponse<ProductResponse>>
         {
             Success = true,
@@ -73,7 +73,7 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var product = await _productService.GetByIdAsync(id, cancellationToken);
-        
+
         if (product == null)
         {
             _logger.LogWarning("Product with ID {ProductId} not found", id);
@@ -116,7 +116,7 @@ public class ProductsController : ControllerBase
         }
 
         var products = await _productService.GetByCategoryAsync(category, cancellationToken);
-        
+
         return Ok(new ApiResponse<IEnumerable<ProductResponse>>
         {
             Success = true,
@@ -152,9 +152,9 @@ public class ProductsController : ControllerBase
         }
 
         var created = await _productService.CreateAsync(request, cancellationToken);
-        
+
         _logger.LogInformation("Product created with ID {ProductId}", created.Id);
-        
+
         return CreatedAtAction(
             nameof(GetById),
             new { id = created.Id },
@@ -196,7 +196,7 @@ public class ProductsController : ControllerBase
         }
 
         var updated = await _productService.UpdateAsync(id, request, cancellationToken);
-        
+
         if (updated == null)
         {
             _logger.LogWarning("Product with ID {ProductId} not found for update", id);
@@ -209,7 +209,7 @@ public class ProductsController : ControllerBase
         }
 
         _logger.LogInformation("Product with ID {ProductId} updated", id);
-        
+
         return Ok(new ApiResponse<ProductResponse>
         {
             Success = true,
@@ -231,7 +231,7 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var deleted = await _productService.DeleteAsync(id, cancellationToken);
-        
+
         if (!deleted)
         {
             _logger.LogWarning("Product with ID {ProductId} not found for deletion", id);
@@ -244,7 +244,7 @@ public class ProductsController : ControllerBase
         }
 
         _logger.LogInformation("Product with ID {ProductId} deleted", id);
-        
+
         return NoContent();
     }
 }

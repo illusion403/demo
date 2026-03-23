@@ -67,13 +67,13 @@ public class InMemoryProductRepository : IProductRepository
     }
 
     public Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber, 
-        int pageSize, 
+        int pageNumber,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
         var allProducts = _products.Values.Where(p => p.IsActive).ToList();
         var totalCount = allProducts.Count;
-        
+
         var items = allProducts
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)

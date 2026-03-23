@@ -44,9 +44,9 @@ public class GlobalExceptionHandlingMiddleware
     }
 
     private static async Task HandleExceptionAsync(
-        HttpContext context, 
-        Exception exception, 
-        HttpStatusCode statusCode, 
+        HttpContext context,
+        Exception exception,
+        HttpStatusCode statusCode,
         string message)
     {
         context.Response.ContentType = "application/json";

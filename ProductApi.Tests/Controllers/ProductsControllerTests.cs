@@ -297,7 +297,7 @@ public class ProductsControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var apiResponse = Assert.IsType<ApiResponse<PagedResponse<ProductResponse>>>(okResult.Value);
         Assert.True(apiResponse.Success);
-        Assert.Equal(1, apiResponse.Data!.Items.Count);
+        Assert.Single(apiResponse.Data!.Items);
     }
 
     #endregion
