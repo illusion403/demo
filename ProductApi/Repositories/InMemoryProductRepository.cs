@@ -29,10 +29,10 @@ public class InMemoryProductRepository : IProductRepository
     {
         if (product.Id == Guid.Empty)
             throw new ArgumentException("Product ID cannot be empty", nameof(product));
-            
+
         if (_products.ContainsKey(product.Id))
             throw new InvalidOperationException($"Product with ID '{product.Id}' already exists");
-        
+
         _products[product.Id] = product;
         return Task.FromResult(product);
     }
@@ -79,7 +79,7 @@ public class InMemoryProductRepository : IProductRepository
     {
         var activeProducts = _products.Values.Where(p => p.IsActive);
         var totalCount = activeProducts.Count();
-        
+
         var items = activeProducts
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize);
