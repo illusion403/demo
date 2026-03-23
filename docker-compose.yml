@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  productapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: product-api
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  default:
+    name: productapi-network

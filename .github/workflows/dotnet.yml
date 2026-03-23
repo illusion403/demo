@@ -1,0 +1,107 @@
+name: .NET CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/ProductApi.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore ProductApi/ProductApi.csproj
+
+    - name: Restore test dependencies
+      run: dotnet restore ProductApi.Tests/ProductApi.Tests.csproj
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
+    - name: Publish
+      run: dotnet publish ProductApi/ProductApi.csproj -c Release -o ./publish
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-artifact
+        path: ./publish
+
+  docker:
+    runs-on: ubuntu-latest
+    name: Docker Build
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: productapi:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-api -p 8080:8080 productapi:latest
+        sleep 10
+        docker ps | grep test-api
+        docker stop test-api
+        docker rm test-api
+
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore tools
+      run: |
+        dotnet new tool-manifest --force
+        dotnet tool install dotnet-format --local
+
+    - name: Check formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: Run analyzers
+      run: dotnet build --verbosity normal /p:TreatWarningsAsErrors=true
