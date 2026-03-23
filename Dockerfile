@@ -2,9 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 WORKDIR /src
 
-# Copy csproj and restore dependencies
+# Copy solution and csproj files first for better layer caching
+COPY ProductApi.sln .
 COPY ProductApi/ProductApi.csproj ProductApi/
-RUN dotnet restore ProductApi/ProductApi.csproj
+RUN dotnet restore
 
 # Copy the rest of the code
 COPY ProductApi/ ProductApi/

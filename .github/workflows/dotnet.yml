@@ -32,10 +32,7 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore ProductApi/ProductApi.csproj
-
-    - name: Restore test dependencies
-      run: dotnet restore ProductApi.Tests/ProductApi.Tests.csproj
+      run: dotnet restore
 
     - name: Build
       run: dotnet build --no-restore --configuration Release
@@ -44,7 +41,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Publish
-      run: dotnet publish ProductApi/ProductApi.csproj -c Release -o ./publish
+      run: dotnet publish -c Release -o ./publish
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -96,12 +93,10 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore tools
-      run: |
-        dotnet new tool-manifest --force
-        dotnet tool install dotnet-format --local
+      run: dotnet restore
 
     - name: Check formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic
 
     - name: Run analyzers
-      run: dotnet build --verbosity normal /p:TreatWarningsAsErrors=true
+      run: dotnet build --verbosity normal --no-restore /p:TreatWarningsAsErrors=true
