@@ -1,21 +1,46 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ProductApi.Models;
 
 public record CreateProductRequest
 {
+    [Required]
+    [StringLength(200, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
+
+    [StringLength(1000)]
     public string Description { get; init; } = string.Empty;
+
+    [Range(0, double.MaxValue)]
     public decimal Price { get; init; }
+
+    [Range(0, int.MaxValue)]
     public int StockQuantity { get; init; }
+
+    [Required]
+    [StringLength(100)]
     public string Category { get; init; } = string.Empty;
 }
 
 public record UpdateProductRequest
 {
+    [Required]
+    [StringLength(200, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
+
+    [StringLength(1000)]
     public string Description { get; init; } = string.Empty;
+
+    [Range(0, double.MaxValue)]
     public decimal Price { get; init; }
+
+    [Range(0, int.MaxValue)]
     public int StockQuantity { get; init; }
+
+    [Required]
+    [StringLength(100)]
     public string Category { get; init; } = string.Empty;
+
     public bool IsActive { get; init; } = true;
 }
 

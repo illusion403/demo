@@ -10,7 +10,7 @@ public class InMemoryProductRepository : IProductRepository
     public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         _products.TryGetValue(id, out var product);
-        return Task.FromResult(product);
+        return Task.FromResult(product?.IsActive == true ? product : null);
     }
 
     public Task<IEnumerable<Product>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -58,12 +58,12 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_products.ContainsKey(id));
+        return Task.FromResult(_products.TryGetValue(id, out var product) && product.IsActive);
     }
 
     public Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_products.Count);
+        return Task.FromResult(_products.Values.Count(p => p.IsActive));
     }
 
     public Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(

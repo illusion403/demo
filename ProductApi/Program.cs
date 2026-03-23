@@ -65,11 +65,11 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 // Seed some sample data
-SeedData(app);
+await SeedData(app);
 
 app.Run();
 
-static void SeedData(WebApplication app)
+static async Task SeedData(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var repository = scope.ServiceProvider.GetRequiredService<IProductRepository>();
@@ -120,6 +120,6 @@ static void SeedData(WebApplication app)
 
     foreach (var product in sampleProducts)
     {
-        repository.CreateAsync(product).Wait();
+        await repository.CreateAsync(product);
     }
 }

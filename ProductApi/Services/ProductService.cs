@@ -48,6 +48,9 @@ public class ProductService : IProductService
 
     public async Task<ProductResponse> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
         ValidateCreateRequest(request);
 
         var product = new Product
@@ -65,6 +68,9 @@ public class ProductService : IProductService
 
     public async Task<ProductResponse?> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
         ValidateUpdateRequest(request);
 
         var existing = await _repository.GetByIdAsync(id, cancellationToken);
@@ -73,14 +79,19 @@ public class ProductService : IProductService
             return null;
         }
 
-        existing.Name = request.Name;
-        existing.Description = request.Description;
-        existing.Price = request.Price;
-        existing.StockQuantity = request.StockQuantity;
-        existing.Category = request.Category;
-        existing.IsActive = request.IsActive;
+        var updatedProduct = new Product
+        {
+            Id = existing.Id,
+            Name = request.Name,
+            Description = request.Description,
+            Price = request.Price,
+            StockQuantity = request.StockQuantity,
+            Category = request.Category,
+            IsActive = request.IsActive,
+            CreatedAt = existing.CreatedAt
+        };
 
-        var result = await _repository.UpdateAsync(existing, cancellationToken);
+        var result = await _repository.UpdateAsync(updatedProduct, cancellationToken);
         return result == null ? null : MapToResponse(result);
     }
 
