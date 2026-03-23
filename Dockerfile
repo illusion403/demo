@@ -5,6 +5,7 @@ WORKDIR /src
 # Copy solution and csproj files first for better layer caching
 COPY ProductApi.sln .
 COPY ProductApi/ProductApi.csproj ProductApi/
+COPY ProductApi.Tests/ProductApi.Tests.csproj ProductApi.Tests/
 RUN dotnet restore
 
 # Copy the rest of the code
