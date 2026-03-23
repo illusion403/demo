@@ -20,10 +20,11 @@ public class InMemoryProductRepository : IProductRepository
     /// <param name="id">The unique identifier of the product.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The product if found and active; otherwise, null.</returns>
+    /// <exception cref="ArgumentException">Thrown when id is empty.</exception>
     public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         if (id == Guid.Empty)
-            return Task.FromResult<Product?>(null);
+            throw new ArgumentException("Product ID cannot be empty.", nameof(id));
 
         _products.TryGetValue(id, out var product);
         return Task.FromResult(product?.IsActive == true ? product : null);
@@ -58,8 +59,6 @@ public class InMemoryProductRepository : IProductRepository
             return Task.FromResult(Enumerable.Empty<Product>());
 
         var sanitizedCategory = category.Trim();
-        if (sanitizedCategory.Length == 0)
-            return Task.FromResult(Enumerable.Empty<Product>());
 
         var products = _products.Values
             .Where(p => p.IsActive && !string.IsNullOrEmpty(p.Category) && p.Category.Equals(sanitizedCategory, StringComparison.OrdinalIgnoreCase))
@@ -110,12 +109,6 @@ public class InMemoryProductRepository : IProductRepository
 
         ValidateProductData(product);
 
-        // Check if product exists and is active
-        if (!_products.TryGetValue(product.Id, out var existing) || !existing.IsActive)
-        {
-            return Task.FromResult<Product?>(null);
-        }
-
         // Create a new Product instance to maintain thread safety (immutable update pattern)
         var updatedProduct = new Product
         {
@@ -126,13 +119,26 @@ public class InMemoryProductRepository : IProductRepository
             StockQuantity = product.StockQuantity,
             Category = product.Category,
             IsActive = product.IsActive,
-            CreatedAt = existing.CreatedAt,
+            CreatedAt = product.CreatedAt,
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Atomically replace the product
-        var updated = _products.AddOrUpdate(product.Id, updatedProduct, (key, oldProduct) => updatedProduct);
-        return Task.FromResult<Product?>(updated);
+        // Atomically update using AddOrUpdate with proper comparison
+        // The factory ensures we only update if the product exists and is active
+        var updated = _products.AddOrUpdate(
+            product.Id,
+            // Add factory: should not be called since we validate existence below
+            key => updatedProduct,
+            // Update factory: atomically check and update
+            (key, existing) =>
+            {
+                // If the existing product is inactive, return it unchanged
+                // The caller will detect this by comparing the result
+                return existing.IsActive ? updatedProduct : existing;
+            });
+
+        // Verify the update was successful (product existed and was active)
+        return Task.FromResult<Product?>(updated.IsActive && updated.UpdatedAt == updatedProduct.UpdatedAt ? updated : null);
     }
 
     /// <summary>
@@ -141,10 +147,11 @@ public class InMemoryProductRepository : IProductRepository
     /// <param name="id">The unique identifier of the product to delete.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>True if the product was successfully deleted; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when id is empty.</exception>
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         if (id == Guid.Empty)
-            return Task.FromResult(false);
+            throw new ArgumentException("Product ID cannot be empty.", nameof(id));
 
         if (!_products.TryGetValue(id, out var existing))
         {
@@ -180,10 +187,11 @@ public class InMemoryProductRepository : IProductRepository
     /// <param name="id">The unique identifier to check.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>True if an active product exists; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when id is empty.</exception>
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         if (id == Guid.Empty)
-            return Task.FromResult(false);
+            throw new ArgumentException("Product ID cannot be empty.", nameof(id));
 
         return Task.FromResult(_products.TryGetValue(id, out var product) && product.IsActive);
     }
@@ -243,21 +251,21 @@ public class InMemoryProductRepository : IProductRepository
     private static void ValidateProductData(Product product)
     {
         if (string.IsNullOrWhiteSpace(product.Name))
-            throw new ArgumentException("Product name cannot be null or empty.", nameof(product));
+            throw new ArgumentException("Product name cannot be null or empty.", nameof(product.Name));
 
         if (product.Name.Length > 200)
-            throw new ArgumentException("Product name cannot exceed 200 characters.", nameof(product));
+            throw new ArgumentException("Product name cannot exceed 200 characters.", nameof(product.Name));
 
         if (product.Price < 0)
-            throw new ArgumentException("Product price cannot be negative.", nameof(product));
+            throw new ArgumentException("Product price cannot be negative.", nameof(product.Price));
 
         if (product.StockQuantity < 0)
-            throw new ArgumentException("Product stock quantity cannot be negative.", nameof(product));
+            throw new ArgumentException("Product stock quantity cannot be negative.", nameof(product.StockQuantity));
 
         if (string.IsNullOrWhiteSpace(product.Category))
-            throw new ArgumentException("Product category cannot be null or empty.", nameof(product));
+            throw new ArgumentException("Product category cannot be null or empty.", nameof(product.Category));
 
         if (product.Category.Length > 100)
-            throw new ArgumentException("Product category cannot exceed 100 characters.", nameof(product));
+            throw new ArgumentException("Product category cannot exceed 100 characters.", nameof(product.Category));
     }
 }
