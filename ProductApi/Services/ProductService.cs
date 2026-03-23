@@ -79,19 +79,16 @@ public class ProductService : IProductService
             return null;
         }
 
-        var updatedProduct = new Product
-        {
-            Id = existing.Id,
-            Name = request.Name,
-            Description = request.Description,
-            Price = request.Price,
-            StockQuantity = request.StockQuantity,
-            Category = request.Category,
-            IsActive = request.IsActive,
-            CreatedAt = existing.CreatedAt
-        };
+        // Update existing product properties instead of creating new object
+        existing.Name = request.Name;
+        existing.Description = request.Description;
+        existing.Price = request.Price;
+        existing.StockQuantity = request.StockQuantity;
+        existing.Category = request.Category;
+        existing.IsActive = request.IsActive;
+        existing.UpdatedAt = DateTime.UtcNow;
 
-        var result = await _repository.UpdateAsync(updatedProduct, cancellationToken);
+        var result = await _repository.UpdateAsync(existing, cancellationToken);
         return result == null ? null : MapToResponse(result);
     }
 

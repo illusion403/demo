@@ -27,18 +27,23 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<Product> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
+        if (product == null)
+            throw new ArgumentNullException(nameof(product));
+
         if (product.Id == Guid.Empty)
             throw new ArgumentException("Product ID cannot be empty", nameof(product));
 
-        if (_products.ContainsKey(product.Id))
+        if (!_products.TryAdd(product.Id, product))
             throw new InvalidOperationException($"Product with ID '{product.Id}' already exists");
 
-        _products[product.Id] = product;
         return Task.FromResult(product);
     }
 
     public Task<Product?> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
+        if (product == null)
+            throw new ArgumentNullException(nameof(product));
+
         if (!_products.ContainsKey(product.Id))
         {
             return Task.FromResult<Product?>(null);
