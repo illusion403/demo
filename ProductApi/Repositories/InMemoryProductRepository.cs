@@ -39,7 +39,6 @@ public class InMemoryProductRepository : IProductRepository
         var activeProducts = _products.Values
             .Where(p => p.IsActive)
             .AsEnumerable();
-        
         return Task.FromResult(activeProducts);
     }
 
@@ -59,16 +58,12 @@ public class InMemoryProductRepository : IProductRepository
             return Task.FromResult(Enumerable.Empty<Product>());
 
         var sanitizedCategory = category.Trim();
-        
         if (sanitizedCategory.Length == 0)
             return Task.FromResult(Enumerable.Empty<Product>());
 
         var products = _products.Values
-            .Where(p => p.IsActive && 
-                   !string.IsNullOrEmpty(p.Category) &&
-                   p.Category.Equals(sanitizedCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(p => p.IsActive && !string.IsNullOrEmpty(p.Category) && p.Category.Equals(sanitizedCategory, StringComparison.OrdinalIgnoreCase))
             .AsEnumerable();
-        
         return Task.FromResult(products);
     }
 
