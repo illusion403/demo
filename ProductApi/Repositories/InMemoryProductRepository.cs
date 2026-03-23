@@ -48,39 +48,52 @@ public class InMemoryProductRepository : IProductRepository
         if (product == null)
             throw new ArgumentNullException(nameof(product));
 
-        // Check if product exists first
-        if (!_products.TryGetValue(product.Id, out var existing))
+        // Check if product exists and is active
+        if (!_products.TryGetValue(product.Id, out var existing) || !existing.IsActive)
         {
             return Task.FromResult<Product?>(null);
         }
 
         product.UpdatedAt = DateTime.UtcNow;
 
-        // Update existing properties atomically to avoid race conditions
-        var updated = _products.AddOrUpdate(product.Id, product, (key, existingProduct) =>
+        // Atomically update the existing product properties
+        var updated = _products.AddOrUpdate(product.Id, product, (key, oldProduct) =>
         {
-            existingProduct.Name = product.Name;
-            existingProduct.Description = product.Description;
-            existingProduct.Price = product.Price;
-            existingProduct.StockQuantity = product.StockQuantity;
-            existingProduct.Category = product.Category;
-            existingProduct.IsActive = product.IsActive;
-            existingProduct.UpdatedAt = product.UpdatedAt;
-            return existingProduct;
+            // oldProduct should be the same as existing, but re-fetch to be safe
+            oldProduct.Name = product.Name;
+            oldProduct.Description = product.Description;
+            oldProduct.Price = product.Price;
+            oldProduct.StockQuantity = product.StockQuantity;
+            oldProduct.Category = product.Category;
+            oldProduct.IsActive = product.IsActive;
+            oldProduct.UpdatedAt = product.UpdatedAt;
+            return oldProduct;
         });
         return Task.FromResult<Product?>(updated);
     }
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!_products.TryGetValue(id, out var product))
+        var product = _products.AddOrUpdate(id,
+            addValueFactory: _ => null!, // Will not be added since we return null
+            updateValueFactory: (_, existing) =>
+            {
+                if (!existing.IsActive)
+                    return existing; // Already deleted
+
+                existing.IsActive = false;
+                existing.UpdatedAt = DateTime.UtcNow;
+                return existing;
+            });
+
+        // If product didn't exist, AddOrUpdate creates a new entry with null value
+        // which we need to remove. Check if we actually found and modified an existing product.
+        if (product == null || !product.IsActive && product.UpdatedAt == null)
         {
+            _products.TryRemove(id, out _);
             return Task.FromResult(false);
         }
 
-        product.IsActive = false;
-        product.UpdatedAt = DateTime.UtcNow;
-        _products[id] = product;
         return Task.FromResult(true);
     }
 
