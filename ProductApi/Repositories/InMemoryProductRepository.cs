@@ -27,6 +27,12 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<Product> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
+        if (product.Id == Guid.Empty)
+            throw new ArgumentException("Product ID cannot be empty", nameof(product));
+            
+        if (_products.ContainsKey(product.Id))
+            throw new InvalidOperationException($"Product with ID '{product.Id}' already exists");
+        
         _products[product.Id] = product;
         return Task.FromResult(product);
     }
@@ -71,13 +77,12 @@ public class InMemoryProductRepository : IProductRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var allProducts = _products.Values.Where(p => p.IsActive).ToList();
-        var totalCount = allProducts.Count;
-
-        var items = allProducts
+        var activeProducts = _products.Values.Where(p => p.IsActive);
+        var totalCount = activeProducts.Count();
+        
+        var items = activeProducts
             .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+            .Take(pageSize);
 
         return Task.FromResult<(IEnumerable<Product> Items, int TotalCount)>((items, totalCount));
     }
