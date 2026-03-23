@@ -57,7 +57,8 @@ public class InMemoryProductRepository : IProductRepository
         product.UpdatedAt = DateTime.UtcNow;
 
         // Update existing properties atomically to avoid race conditions
-        var updated = _products.AddOrUpdate(product.Id, product, (key, existingProduct) => {
+        var updated = _products.AddOrUpdate(product.Id, product, (key, existingProduct) =>
+        {
             existingProduct.Name = product.Name;
             existingProduct.Description = product.Description;
             existingProduct.Price = product.Price;
