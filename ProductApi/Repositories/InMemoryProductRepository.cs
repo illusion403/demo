@@ -46,7 +46,7 @@ public class InMemoryProductRepository : IProductRepository
             throw new ArgumentNullException(nameof(product));
 
         product.UpdatedAt = DateTime.UtcNow;
-        
+
         var updated = _products.AddOrUpdate(product.Id, product, (key, existing) => product);
         return Task.FromResult<Product?>(updated);
     }
