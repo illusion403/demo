@@ -51,6 +51,8 @@ public class ProductService : IProductService
         if (request == null)
             throw new ArgumentNullException(nameof(request));
 
+        ValidateCreateRequest(request);
+
         var product = new Product
         {
             Name = request.Name,
@@ -68,6 +70,8 @@ public class ProductService : IProductService
     {
         if (request == null)
             throw new ArgumentNullException(nameof(request));
+
+        ValidateUpdateRequest(request);
 
         var existing = await _repository.GetByIdAsync(id, cancellationToken);
         if (existing == null)
@@ -113,6 +117,30 @@ public class ProductService : IProductService
             TotalCount = totalCount,
             TotalPages = totalPages
         };
+    }
+
+    private static void ValidateCreateRequest(CreateProductRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Product name is required", nameof(request));
+
+        if (request.Price < 0)
+            throw new ArgumentException("Price cannot be negative", nameof(request));
+
+        if (request.StockQuantity < 0)
+            throw new ArgumentException("Stock quantity cannot be negative", nameof(request));
+    }
+
+    private static void ValidateUpdateRequest(UpdateProductRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Product name is required", nameof(request));
+
+        if (request.Price < 0)
+            throw new ArgumentException("Price cannot be negative", nameof(request));
+
+        if (request.StockQuantity < 0)
+            throw new ArgumentException("Stock quantity cannot be negative", nameof(request));
     }
 
     private static ProductResponse MapToResponse(Product product) => new()
