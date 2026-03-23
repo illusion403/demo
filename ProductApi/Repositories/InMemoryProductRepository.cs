@@ -74,26 +74,20 @@ public class InMemoryProductRepository : IProductRepository
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var product = _products.AddOrUpdate(id,
-            addValueFactory: _ => null!, // Will not be added since we return null
-            updateValueFactory: (_, existing) =>
-            {
-                if (!existing.IsActive)
-                    return existing; // Already deleted
-
-                existing.IsActive = false;
-                existing.UpdatedAt = DateTime.UtcNow;
-                return existing;
-            });
-
-        // If product didn't exist, AddOrUpdate creates a new entry with null value
-        // which we need to remove. Check if we actually found and modified an existing product.
-        if (product == null || !product.IsActive && product.UpdatedAt == null)
+        if (!_products.TryGetValue(id, out var existing))
         {
-            _products.TryRemove(id, out _);
             return Task.FromResult(false);
         }
 
+        if (!existing.IsActive)
+        {
+            return Task.FromResult(false);
+        }
+
+        existing.IsActive = false;
+        existing.UpdatedAt = DateTime.UtcNow;
+        _products.TryUpdate(id, existing, existing);
+        
         return Task.FromResult(true);
     }
 

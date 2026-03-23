@@ -181,6 +181,16 @@ public class ProductsController : ControllerBase
         [FromBody] UpdateProductRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = "Invalid product ID",
+                Data = null
+            });
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(new ApiResponse<object>
@@ -230,6 +240,17 @@ public class ProductsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
+        if (id == Guid.Empty)
+        {
+            _logger.LogWarning("Invalid product ID provided for deletion");
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = "Invalid product ID",
+                Data = null
+            });
+        }
+
         var deleted = await _productService.DeleteAsync(id, cancellationToken);
 
         if (!deleted)
