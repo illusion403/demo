@@ -75,8 +75,14 @@ jobs:
     - name: Test Docker image
       run: |
         docker run -d --name test-api -p 8080:8080 productapi:latest
-        sleep 10
-        docker ps | grep test-api
+        sleep 5
+        docker logs test-api
+        docker ps --filter "name=test-api" --format "table {{.Names}}\t{{.Status}}"
+        if ! docker ps --filter "name=test-api" --filter "status=running" | grep -q test-api; then
+          echo "Container is not running"
+          docker logs test-api
+          exit 1
+        fi
         docker stop test-api
         docker rm test-api
 
