@@ -23,7 +23,7 @@ EXPOSE 8080
 EXPOSE 8081
 
 # Create non-root user for security
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
+RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser /app
 USER appuser
 
 COPY --from=publish /app/publish .
