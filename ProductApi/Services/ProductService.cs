@@ -74,22 +74,15 @@ public class ProductService : IProductService
 
         ValidateUpdateRequest(request);
 
-        var existing = await _repository.GetByIdAsync(id, cancellationToken);
-        if (existing == null)
-        {
-            return null;
-        }
-
         // Create a new product instance with updated values
         var updatedProduct = new Product
         {
-            Id = existing.Id,
+            Id = id,
             Name = request.Name,
             Description = request.Description,
             Price = request.Price,
             StockQuantity = request.StockQuantity,
             Category = SanitizeCategory(request.Category),
-            CreatedAt = existing.CreatedAt,
             UpdatedAt = DateTime.UtcNow,
             IsActive = request.IsActive
         };

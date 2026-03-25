@@ -240,14 +240,14 @@ public class ProductServiceTests
     {
         // Arrange
         var productId = Guid.NewGuid();
-        var existingProduct = new Product
+        var updatedProduct = new Product
         {
             Id = productId,
-            Name = "Old Name",
-            Description = "Old Description",
-            Price = 10m,
-            StockQuantity = 5,
-            Category = "Old Category",
+            Name = "Updated Name",
+            Description = "Updated Description",
+            Price = 20m,
+            StockQuantity = 10,
+            Category = "Updated Category",
             IsActive = true
         };
 
@@ -261,11 +261,8 @@ public class ProductServiceTests
             IsActive = true
         };
 
-        _mockRepository.Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingProduct);
-
-        _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Product p, CancellationToken _) => p);
+        _mockRepository.Setup(r => r.UpdateAsync(It.Is<Product>(p => p.Id == productId), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(updatedProduct);
 
         // Act
         var result = await _service.UpdateAsync(productId, request);
@@ -274,7 +271,6 @@ public class ProductServiceTests
         Assert.NotNull(result);
         Assert.Equal(request.Name, result.Name);
         Assert.Equal(request.Price, result.Price);
-        _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
         _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -291,7 +287,7 @@ public class ProductServiceTests
             Category = "Updated Category"
         };
 
-        _mockRepository.Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+        _mockRepository.Setup(r => r.UpdateAsync(It.Is<Product>(p => p.Id == productId), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product?)null);
 
         // Act
@@ -299,8 +295,7 @@ public class ProductServiceTests
 
         // Assert
         Assert.Null(result);
-        _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

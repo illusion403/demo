@@ -10,9 +10,6 @@ namespace ProductApi.Repositories;
 public class InMemoryProductRepository : IProductRepository
 {
     private readonly ConcurrentDictionary<Guid, Product> _products = new();
-    private const int MaxPageSize = 100;
-    private const int MinPageSize = 1;
-    private const int MinPageNumber = 1;
 
     /// <summary>
     /// Retrieves an active product by its unique identifier.
@@ -125,6 +122,7 @@ public class InMemoryProductRepository : IProductRepository
 
         // Atomically update using AddOrUpdate with proper comparison
         // The factory ensures we only update if the product exists and is active
+        var wasUpdated = false;
         var updated = _products.AddOrUpdate(
             product.Id,
             // Add factory: should not be called since we validate existence below
@@ -133,12 +131,14 @@ public class InMemoryProductRepository : IProductRepository
             (key, existing) =>
             {
                 // If the existing product is inactive, return it unchanged
-                // The caller will detect this by comparing the result
-                return existing.IsActive ? updatedProduct : existing;
+                if (!existing.IsActive)
+                    return existing;
+                wasUpdated = true;
+                return updatedProduct;
             });
 
         // Verify the update was successful (product existed and was active)
-        return Task.FromResult<Product?>(updated.IsActive && updated.UpdatedAt == updatedProduct.UpdatedAt ? updated : null);
+        return Task.FromResult<Product?>(wasUpdated ? updated : null);
     }
 
     /// <summary>
@@ -219,15 +219,6 @@ public class InMemoryProductRepository : IProductRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        if (pageNumber < MinPageNumber)
-            throw new ArgumentException($"Page number must be greater than or equal to {MinPageNumber}.", nameof(pageNumber));
-
-        if (pageSize < MinPageSize)
-            throw new ArgumentException($"Page size must be greater than or equal to {MinPageSize}.", nameof(pageSize));
-
-        if (pageSize > MaxPageSize)
-            throw new ArgumentException($"Page size cannot exceed {MaxPageSize}.", nameof(pageSize));
-
         var activeProducts = _products.Values.Where(p => p.IsActive).ToList();
         var totalCount = activeProducts.Count;
 
